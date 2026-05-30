@@ -4,230 +4,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Favoris - MercaTech</title>
+    <title>Produit - MercaTech</title>
 
     <style>
+
         *{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, Helvetica, sans-serif;
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, Helvetica, sans-serif;
         }
 
         body{
-            background-color: #f8fafc;
-            color: #0f172a;
+            background:#f8fafc;
+            color:#0f172a;
         }
 
+        /* HEADER */
+
         nav{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 60px;
-            background-color: #0f172a;
-            border-bottom: 1px solid #1e293b;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:20px 60px;
+            background:#0f172a;
         }
 
         .logo{
-            font-size: 30px;
-            font-weight: bold;
-            color: #38bdf8;
+            font-size:30px;
+            font-weight:bold;
+            color:#38bdf8;
         }
 
         nav ul{
-            display: flex;
-            list-style: none;
-            gap: 30px;
-            align-items: center;
+            display:flex;
+            list-style:none;
+            gap:30px;
         }
 
         nav ul li a{
-            text-decoration: none;
-            color: white;
-            transition: 0.3s;
-            font-size: 17px;
+            text-decoration:none;
+            color:white;
+            transition:0.3s;
+            font-size:17px;
         }
 
         nav ul li a:hover{
-            color: #38bdf8;
+            color:#38bdf8;
         }
 
-        /* PANIER TOP RIGHT */
-
-        .top-actions{
-            display: flex;
-            justify-content: flex-end;
-            padding: 25px 60px 0;
+        .product-page{
+            display:flex;
+            gap:50px;
+            padding:60px;
         }
 
-        .cart-button{
-            text-decoration: none;
-            background-color: #0f172a;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-weight: bold;
-            transition: 0.3s;
+        /* IMAGE */
+
+        .product-image{
+            flex:1;
         }
 
-        .cart-button:hover{
-            background-color: #1e293b;
+        .product-image img{
+            width:100%;
+            border-radius:20px;
+            box-shadow:0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .page-title{
-            padding: 30px 60px 20px;
+        .product-details{
+            flex:1;
+            background:white;
+            padding:40px;
+            border-radius:20px;
+            box-shadow:0 5px 15px rgba(0,0,0,0.08);
         }
 
-        .page-title h1{
-            font-size: 42px;
-            color: #0f172a;
-        }
-
-        .page-title p{
-            margin-top: 10px;
-            color: #64748b;
-            font-size: 18px;
-        }
-
-        .favorites-container{
-            padding: 20px 60px 80px;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        .favorite-card{
-            background-color: white;
-            border-radius: 18px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            gap: 25px;
-            padding: 20px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-            transition: 0.3s;
-        }
-
-        .favorite-card:hover{
-            transform: translateY(-5px);
-        }
-
-        .favorite-card img{
-            width: 220px;
-            height: 180px;
-            object-fit: cover;
-            border-radius: 12px;
-        }
-
-        .favorite-info{
-            flex: 1;
-        }
-
-        .favorite-info h2{
-            margin-bottom: 10px;
-            color: #0f172a;
-        }
-
-        .favorite-info p{
-            color: #64748b;
-            margin-bottom: 15px;
-            line-height: 1.5;
+        .product-details h1{
+            font-size:45px;
+            margin-bottom:20px;
         }
 
         .price{
-            font-size: 28px;
-            font-weight: bold;
-            color: #0284c7;
+            color:#0284c7;
+            font-size:40px;
+            font-weight:bold;
+            margin-bottom:25px;
         }
-        
-        <!-- boutons d'actions -->
+
+        .description{
+            color:#475569;
+            line-height:1.8;
+            margin-bottom:30px;
+            font-size:17px;
+        }
+
+        .product-info{
+            margin-bottom:30px;
+        }
+
+        .product-info p{
+            margin-bottom:12px;
+            font-size:16px;
+        }
+
+        .seller{
+            background:#f1f5f9;
+            padding:20px;
+            border-radius:15px;
+            margin-bottom:30px;
+        }
+
+        .seller h3{
+            margin-bottom:10px;
+        }
+
+        /* BUTTONS */
 
         .buttons{
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            display:flex;
+            gap:15px;
+            flex-wrap:wrap;
         }
 
         .btn{
-            padding: 12px 20px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-            min-width: 190px;
+            flex:1;
+            min-width:180px;
+            padding:16px;
+            border:none;
+            border-radius:12px;
+            font-size:16px;
+            font-weight:bold;
+            cursor:pointer;
+            transition:0.3s;
         }
 
         .btn-cart{
-            background-color: #38bdf8;
-            color: white;
+            background:#38bdf8;
+            color:white;
         }
 
         .btn-cart:hover{
-            background-color: #0ea5e9;
+            background:#0ea5e9;
         }
 
-        .btn-view{
-            background-color: #0f172a;
-            color: white;
+        .btn-fav{
+            background:#e2e8f0;
         }
 
-        .btn-view:hover{
-            background-color: #1e293b;
+        .btn-fav:hover{
+            background:#cbd5e1;
         }
 
-        .btn-remove{
-            background-color: #ef4444;
-            color: white;
+        .btn-buy{
+            background:#0f172a;
+            color:white;
         }
 
-        .btn-remove:hover{
-            background-color: #dc2626;
+        .btn-buy:hover{
+            background:#1e293b;
         }
+
 
         footer{
-            background-color: #0f172a;
-            text-align: center;
-            padding: 25px;
-            color: white;
-            border-top: 1px solid #1e293b;
+            background:#0f172a;
+            color:white;
+            text-align:center;
+            padding:25px;
+            margin-top:50px;
         }
 
-        @media(max-width: 900px){
 
-            .favorite-card{
-                flex-direction: column;
-                text-align: center;
-            }
+        @media(max-width:950px){
 
-            .buttons{
-                width: 100%;
-            }
-
-            .btn{
-                width: 100%;
-            }
-
-            .favorite-card img{
-                width: 100%;
-                height: 250px;
-            }
-
-            .top-actions{
-                justify-content: center;
+            .product-page{
+                flex-direction:column;
             }
         }
 
-        @media(max-width: 768px){
+        @media(max-width:768px){
 
             nav{
-                flex-direction: column;
-                gap: 20px;
+                flex-direction:column;
+                gap:20px;
             }
 
             nav ul{
-                flex-wrap: wrap;
-                justify-content: center;
+                flex-wrap:wrap;
+                justify-content:center;
+            }
+
+            .product-page{
+                padding:25px;
+            }
+
+            .product-details{
+                padding:25px;
+            }
+
+            .product-details h1{
+                font-size:35px;
+            }
+
+            .price{
+                font-size:32px;
             }
         }
 
@@ -236,96 +215,61 @@
 </head>
 
 <body>
-<nav>
 
+    <nav>
         <div class="logo">
             MercaTech
         </div>
 
         <ul>
-            <li><a href="accueil.html">Accueil</a></li>
-            <li><a href="catalogue.html">Catalogue</a></li>
+            <li><a href="Acceuil_MT.html">Accueil</a></li>
+            <li><a href="Catalogue.html">Catalogue</a></li>
             <li><a href="encheres.html">Enchères</a></li>
-			<li><a href="mes_annonces.html">Mes annonces</a></li>
+            <li><a href="mes_annonces.html">Mes annonces</a></li>
             <li><a href="connexion.html">Connexion</a></li>
         </ul>
 
     </nav>
-	<div class="top-actions">
 
-        <a href="#" class="cart-button">
-            🛒 Voir le panier
-        </a>
+    <section class="product-page">
 
-    </div>
-
-
-    <section class="page-title">
-
-        <h1>Mes Favoris ❤️</h1>
-
-        <p>
-            Retrouvez ici tous les produits que vous avez ajoutés à vos favoris.
-        </p>
-
-    </section>
-
-
-    <section class="favorites-container">
-
-        <!-- PRODUCT 1 -->
-        <div class="favorite-card">
+        <div class="product-image">
 
             <img src="https://images.unsplash.com/photo-1606813907291-d86efa9b94db?q=80&w=1170&auto=format&fit=crop" alt="PS5">
 
-            <div class="favorite-info">
-
-                <h2>PlayStation 5</h2>
-
-                <p>
-                    Console nouvelle génération avec graphismes ultra réalistes et SSD ultra rapide.
-                </p>
-
-                <div class="price">
-                    499€
-                </div>
-
-            </div>
-
-            <div class="buttons">
-
-                <button class="btn btn-cart">
-                    🛒 Ajouter au panier
-                </button>
-
-                <button class="btn btn-view">
-                    👁 Voir le produit
-                </button>
-
-                <button class="btn btn-remove">
-                    ❌ Retirer des favoris
-                </button>
-
-            </div>
-
         </div>
 
-        <!-- PRODUCT 2 -->
-        <div class="favorite-card">
+        <div class="product-details">
 
-            <img src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=1170&auto=format&fit=crop" alt="PC Gamer">
+            <h1>PlayStation 5</h1>
 
-            <div class="favorite-info">
+            <div class="price">
+                499€
+            </div>
 
-                <h2>PC Gamer RTX</h2>
+            <p class="description">
+                Découvrez la PlayStation 5 avec ses performances nouvelle génération,
+                son SSD ultra rapide, ses graphismes 4K et sa manette DualSense immersive.
+                Une console idéale pour profiter des derniers jeux AAA.
+            </p>
 
-                <p>
-                    PC gaming haute performance parfait pour les jeux AAA et le streaming.
-                </p>
+            <div class="product-info">
 
-                <div class="price">
-                    1599€
-                </div>
+                <p><strong>Catégorie :</strong> Gaming</p>
+
+                <p><strong>État :</strong> Neuf</p>
+
+                <p><strong>Type de vente :</strong> Achat immédiat</p>
+
+                <p><strong>Livraison :</strong> Disponible partout en France</p>
+
+            </div>
+
+            <div class="seller">
+
+                <h3>Vendeur</h3>
+
+                <p>NovaGaming75 ⭐ 4.9/5</p>
 
             </div>
 
@@ -335,51 +279,13 @@
                     🛒 Ajouter au panier
                 </button>
 
-                <button class="btn btn-view">
-                    👁 Voir le produit
+                <button class="btn btn-fav">
+                    ❤️ Ajouter aux favoris
                 </button>
 
-                <button class="btn btn-remove">
-                    ❌ Retirer des favoris
+                <button class="btn btn-buy">
+                    Acheter maintenant
                 </button>
-
-            </div>
-
-        </div>
-
-        <!-- PRODUCT 3 -->
-        <div class="favorite-card">
-
-            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1170&auto=format&fit=crop" alt="iPhone">
-
-            <div class="favorite-info">
-
-                <h2>iPhone 15 Pro</h2>
-
-                <p>
-                    Smartphone premium Apple avec écran ProMotion et appareil photo avancé.
-                </p>
-
-                <div class="price">
-                    1299€
-                </div>
-
-            </div>
-
-            <div class="buttons">
-
-                <button class="btn btn-cart">
-                    🛒 Ajouter au panier
-                </button>
-
-                <button class="btn btn-view">
-                    👁 Voir le produit
-                </button>
-
-                <button class="btn btn-remove">
-                    ❌ Retirer des favoris
-                </button>
-
             </div>
 
         </div>
@@ -391,6 +297,7 @@
             © 2026 MercaTech - Tous droits réservés
         </p>
     </footer>
+
 </body>
 
 </html>
