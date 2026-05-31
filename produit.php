@@ -1,4 +1,5 @@
 <?php
+// Démarrage de la session pour l'utilisateur connecté
 session_start();
 
 // CONNEXION MYSQL
@@ -7,240 +8,395 @@ $dbname = "mercato_nova";
 $user = "root";
 $password = "";
 
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
+try{
+    $pdo = new PDO(
+        "mysql:host=$host;dbname=$dbname;charset=utf8",
+        $user,
+        $password
+    );
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
+}catch(PDOException $e){
     die("Erreur connexion base de données.");
 }
 
-// ID de l'utilisateur connecté (Lier à votre session, de test = 1)
+// RECUPERATION ID PRODUIT
+if(!isset($_GET["id"])){
+    die("Produit introuvable.");
+}
+
+$id_produit = intval($_GET["id"]);
+
+// ID de l'utilisateur connecté (null s'il est visiteur anonyme)
 $utilisateur_id = $_SESSION['utilisateur_id'] ?? null;
 
-// Si l'utilisateur n'est pas connecté, on le redirige vers la page de connexion
-if (!$utilisateur_id) {
-    header("Location: connexion.html");
+// ==========================================
+// LOGIQUE D'AJOUT AUX FAVORIS (CORRIGÉE)
+// ==========================================
+if (isset($_GET['action']) && $_GET['action'] === 'add_favoris') {
+    // 1. Vérification stricte de la connexion utilisateur
+    if (!$utilisateur_id) {
+        header("Location: connexion.html"); // Redirection immédiate si non connecté
+        exit();
+    }
+
+    // 2. Si connecté, exécution de la logique d'ajout aux favoris
+    $verif = $pdo->prepare("SELECT id FROM favoris WHERE utilisateur_id = ? AND produit_id = ?");
+    $verif->execute([$utilisateur_id, $id_produit]);
+    
+    if ($verif->rowCount() == 0) {
+        $insert = $pdo->prepare("INSERT INTO favoris (utilisateur_id, produit_id) VALUES (?, ?)");
+        $insert->execute([$utilisateur_id, $id_produit]);
+    }
+    
+    // 3. RESOLUTION DU RETOUR EN ARRIERE : Redirection propre vers la page du produit nettoyée de l'action
+    header("Location: produit.php?id=" . $id_produit);
     exit();
 }
 
-$message = "";
+// RECUPERATION DES DETAILS DU PRODUIT
+$requete = $pdo->prepare("
+    SELECT p.*, u.nom_utilisateur 
+    FROM produits p
+    LEFT JOIN utilisateurs u ON p.utilisateur_id = u.id
+    WHERE p.id = ?
+");
+$requete->execute([$id_produit]);
+$produit = $requete->fetch(PDO::FETCH_ASSOC);
 
-// ==========================================
-// TRRAITEMENT DES ACTIONS (Ajout, Modif, Suppr)
-// ==========================================
-if (isset($_GET['action'])) {
-    $action = $_GET['action'];
-    $produit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
-    // 1. AJOUTER UN PRODUIT AU PANIER
-    if ($action === 'add' && $produit_id > 0) {
-        // Vérifier si le produit est déjà dans le panier
-        $verif = $pdo->prepare("SELECT id, quantite FROM panier WHERE utilisateur_id = ? AND produit_id = ?");
-        $verif->execute([$utilisateur_id, $produit_id]);
-        $existe = $verif->fetch();
-
-        if ($existe) {
-            // Si le produit existe déjà, on augmente la quantité de 1
-            $nouvelle_qte = $existe['quantite'] + 1;
-            $update = $pdo->prepare("UPDATE panier SET quantite = ? WHERE id = ?");
-            $update->execute([$nouvelle_qte, $existe['id']]);
-        } else {
-            // Sinon, on l'insère avec une quantité de 1
-            $insert = $pdo->prepare("INSERT INTO panier (utilisateur_id, produit_id, quantite) VALUES (?, ?, 1)");
-            $insert->execute([$utilisateur_id, $produit_id]);
-        }
-        header("Location: panier.php");
-        exit;
-    }
-
-    // 2. MODIFIER LA QUANTITÉ (+ ou -)
-    if (($action === 'increase' || $action === 'decrease') && $produit_id > 0) {
-        $verif = $pdo->prepare("SELECT id, quantite FROM panier WHERE utilisateur_id = ? AND produit_id = ?");
-        $verif->execute([$utilisateur_id, $produit_id]);
-        $item = $verif->fetch();
-
-        if ($item) {
-            if ($action === 'increase') {
-                $nouvelle_qte = $item['quantite'] + 1;
-            } else {
-                $nouvelle_qte = $item['quantite'] - 1;
-            }
-
-            if ($nouvelle_qte > 0) {
-                $update = $pdo->prepare("UPDATE panier SET quantite = ? WHERE id = ?");
-                $update->execute([$nouvelle_qte, $item['id']]);
-            } else {
-                // Si la quantité tombe à 0, on supprime le produit du panier
-                $delete = $pdo->prepare("DELETE FROM panier WHERE id = ?");
-                $delete->execute([$item['id']]);
-            }
-        }
-        header("Location: panier.php");
-        exit;
-    }
-
-    // 3. RETIRER UN PRODUIT COMPLETEMENT
-    if ($action === 'delete' && $produit_id > 0) {
-        $delete = $pdo->prepare("DELETE FROM panier WHERE utilisateur_id = ? AND produit_id = ?");
-        $delete->execute([$utilisateur_id, $produit_id]);
-        header("Location: panier.php");
-        exit;
-    }
-}
-
-// ==========================================
-// RECUPERATION DES PRODUITS DU PANIER
-// ==========================================
-try {
-    $requete = $pdo->prepare("
-        SELECT 
-            panier.produit_id,
-            panier.quantite,
-            produits.nom,
-            produits.description,
-            produits.prix,
-            produits.image
-        FROM panier
-        INNER JOIN produits ON panier.produit_id = produits.id
-        WHERE panier.utilisateur_id = ?
-    ");
-    $requete->execute([$utilisateur_id]);
-    $liste_panier = $requete->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    die("Erreur lors de la récupération du panier : " . $e->getMessage());
-}
-
-// Calcul du sous-total global
-$sous_total = 0;
-foreach ($liste_panier as $item) {
-    $sous_total += $item['prix'] * $item['quantite'];
+if(!$produit){
+    die("Le produit demandé n'existe pas.");
 }
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panier - Mercato Nova</title>
+    <title><?php echo htmlspecialchars($produit["nom"] ?? 'Produit'); ?> - Mercato Nova</title>
+
     <style>
-        /* [Vos styles CSS d'origine restent identiques] */
-        *{ margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
-        body{ background-color: #f8fafc; color: #0f172a; }
-        nav{ display: flex; justify-content: space-between; align-items: center; padding: 20px 60px; background-color: #0f172a; border-bottom: 1px solid #1e293b; }
-        .logo{ font-size: 30px; font-weight: bold; color: #38bdf8; }
-        nav ul{ display: flex; list-style: none; gap: 30px; align-items: center; }
-        nav ul li a{ text-decoration: none; color: white; transition: 0.3s; font-size: 17px; }
-        nav ul li a:hover{ color: #38bdf8; }
-        .page-title{ padding: 50px 60px 20px; }
-        .page-title h1{ font-size: 42px; margin-bottom: 10px; }
-        .page-title p{ color: #64748b; font-size: 18px; }
-        .cart-container{ display: flex; gap: 40px; padding: 20px 60px 80px; }
-        .cart-products{ flex: 2; display: flex; flex-direction: column; gap: 25px; }
-        .cart-card{ background-color: white; border-radius: 18px; padding: 20px; display: flex; gap: 25px; align-items: center; box-shadow: 0 3px 10px rgba(0,0,0,0.08); transition: 0.3s; }
-        .cart-card:hover{ transform: translateY(-5px); }
-        .cart-card img{ width: 220px; height: 180px; object-fit: cover; border-radius: 12px; }
-        .product-info{ flex: 1; }
-        .product-info h2{ margin-bottom: 10px; }
-        .product-info p{ color: #64748b; margin-bottom: 15px; line-height: 1.5; }
-        .price{ color: #0284c7; font-size: 28px; font-weight: bold; }
-        .quantity{ display: flex; align-items: center; gap: 10px; margin-top: 20px; }
-        .quantity .btn-qty{ display: flex; justify-content: center; align-items: center; text-decoration: none; width: 35px; height: 35px; border: none; border-radius: 8px; background-color: #0f172a; color: white; cursor: pointer; font-size: 18px; font-weight: bold; }
-        .quantity span{ font-size: 18px; font-weight: bold; }
-        .actions{ display: flex; flex-direction: column; gap: 15px; }
-        .btn{ display: inline-block; text-align: center; text-decoration: none; padding: 12px 18px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; min-width: 180px; }
-        .btn-view{ background-color: #38bdf8; color: white; }
-        .btn-view:hover{ background-color: #0ea5e9; }
-        .btn-remove{ background-color: #ef4444; color: white; }
-        .btn-remove:hover{ background-color: #dc2626; }
-        .summary{ flex: 1; background-color: white; border-radius: 18px; padding: 30px; height: fit-content; box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
-        .summary h2{ margin-bottom: 30px; }
-        .summary-line{ display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 18px; }
-        .total{ font-size: 24px; font-weight: bold; margin-top: 20px; border-top: 1px solid #cbd5e1; padding-top: 20px; }
-        .checkout-btn{ width: 100%; padding: 15px; margin-top: 30px; border: none; border-radius: 12px; background-color: #0f172a; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .checkout-btn:hover{ background-color: #1e293b; }
-        .empty-cart { text-align: center; padding: 60px; background: white; border-radius: 18px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); width: 100%; }
-        .empty-cart a { display: inline-block; margin-top: 20px; padding: 12px 25px; background-color: #38bdf8; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; }
-        footer{ background-color: #0f172a; text-align: center; padding: 25px; color: white; border-top: 1px solid #1e293b; }
-        @media(max-width: 1000px){ .cart-container{ flex-direction: column; } }
-        @media(max-width: 850px){ .cart-card{ flex-direction: column; text-align: center; } .cart-card img{ width: 100%; height: 250px; } .actions{ width: 100%; } .btn{ width: 100%; } .quantity{ justify-content: center; } }
-        @media(max-width: 768px){ nav{ flex-direction: column; gap: 20px; } nav ul{ flex-wrap: wrap; justify-content: center; } }
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body{
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        /* HEADER */
+        nav{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 60px;
+            background-color: #0f172a;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .logo{
+            font-size: 30px;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        nav ul{
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            align-items: center;
+        }
+
+        nav ul li a{
+            text-decoration: none;
+            color: white;
+            transition: 0.3s;
+            font-size: 17px;
+        }
+
+        nav ul li a:hover{
+            color: #38bdf8;
+        }
+
+        /* PRODUCT DETAILS */
+        .container{
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            display: flex;
+            gap: 50px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .product-image{
+            flex: 1;
+        }
+
+        .product-image img{
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+            border-radius: 15px;
+        }
+
+        .product-details{
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1{
+            font-size: 36px;
+            margin-bottom: 15px;
+            color: #0f172a;
+        }
+
+        .price{
+            font-size: 30px;
+            font-weight: bold;
+            color: #0284c7;
+            margin-bottom: 25px;
+        }
+
+        .description{
+            font-size: 18px;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .product-info{
+            background-color: #f1f5f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .product-info p{
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .product-info p:last-child{
+            margin-bottom: 0;
+        }
+
+        .seller{
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .seller h3{
+            margin-bottom: 5px;
+        }
+
+        .seller p{
+            color: #64748b;
+        }
+
+        .buttons{
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn{
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            border: none;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+		.back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #000000;             
+            background-color: #e2e8f0;   
+            padding: 8px 16px;          
+            border-radius: 8px;         
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.3s;
+			align-self: flex-start;
+        }
+        .back-btn:hover {
+            background-color: #cbd5e1;   
+            color: #000000;
+        }
+
+        .btn-cart{
+            background-color: #0f172a;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-cart:hover{
+            background-color: #1e293b;
+        }
+
+        .btn-fav{
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-fav:hover{
+            background-color: #dc2626;
+        }
+
+        .btn-buy{
+            background-color: #38bdf8;
+            color: white;
+            width: 100%;
+            margin-top: 15px;
+        }
+		.btn-negotiate {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-negotiate:hover {
+    background-color: #059669;
+}
+
+        .btn-buy:hover{
+            background-color: #0ea5e9;
+        }
+
+        footer{
+            background-color: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            margin-top: 50px;
+        }
     </style>
 </head>
+
 <body>
 
     <nav>
         <div class="logo">Mercato Nova</div>
         <ul>
             <li><a href="accueil.php">Accueil</a></li>
-            <li><a href="catalogue.php">Catalogue</a></li>
+            <li><a href="Catalogue.php">Catalogue</a></li>
             <li><a href="encheres.php">Enchères</a></li>
-			<li><a href="mes_annonces.php">Mes annonces</a></li>
+            <li><a href="mes_annonces.php">Mes annonces</a></li>
             <?php if (isset($_SESSION['nom_utilisateur'])): ?>
                 <li style="color: #38bdf8; font-weight: bold; font-size: 17px; display: flex; align-items: center; gap: 8px;">
                     👤 <?= htmlspecialchars($_SESSION['nom_utilisateur']); ?>
                     <a href="deconnexion.php" style="color: #ef4444; font-size: 13px; text-decoration: none;" onclick="return confirm('Voulez-vous vous déconnecter ?');">(Déconnexion)</a>
                 </li>
             <?php else: ?>
-                <li><a href="connexion.html">Connexion</a></li>
+                <li><a href="seconnecter.php">Connexion</a></li>
             <?php endif; ?>
         </ul>
     </nav>
 
-    <section class="page-title">
-        <h1>Mon Panier 🛒</h1>
-        <p>Consultez vos produits avant de finaliser votre commande.</p>
-    </section>
+    <section class="container">
+		<a href="javascript:history.back()" class="back-btn">⬅ Retour</a>
+        <div class="product-image">
+            <img src="<?php echo htmlspecialchars($produit["image"] ?? 'uploads/default.jpg'); ?>" alt="<?php echo htmlspecialchars($produit["nom"] ?? 'Produit'); ?>">
+        </div>
 
-    <section class="cart-container">
-        <?php if (empty($liste_panier)): ?>
-            <div class="empty-cart">
-                <h2>Votre panier est vide 😮</h2>
-                <p>Découvrez nos articles disponibles sur le catalogue pour commencer vos achats !</p>
-                <a href="catalogue.php">Retourner au catalogue</a>
-            </div>
-        <?php else: ?>
-            <div class="cart-products">
-                <?php foreach ($liste_panier as $item): ?>
-                    <div class="cart-card">
-                        <img src="<?= htmlspecialchars($item['image'] ?? 'uploads/default.jpg') ?>" alt="<?= htmlspecialchars($item['nom']) ?>">
+        <div class="product-details">
+            <h1><?php echo htmlspecialchars($produit["nom"] ?? 'Produit sans nom'); ?></h1>
+            <div class="price"><?php echo number_format($produit["prix"], 0, ',', ' '); ?>€</div>
+            <p class="description"><?php echo nl2br(htmlspecialchars($produit["description"] ?? '')); ?></p>
 
-                        <div class="product-info">
-                            <h2><?= htmlspecialchars($item['nom']) ?></h2>
-                            <p><?= nl2br(htmlspecialchars($item['description'])) ?></p>
-                            <div class="price"><?= number_format($item['prix'], 0, ',', ' ') ?>€</div>
-
-                            <div class="quantity">
-                                <a href="panier.php?action=decrease&id=<?= $item['produit_id'] ?>" class="btn-qty">-</a>
-                                <span><?= $item['quantite'] ?></span>
-                                <a href="panier.php?action=increase&id=<?= $item['produit_id'] ?>" class="btn-qty">+</a>
-                            </div>
-                        </div>
-
-                        <div class="actions">
-                            <a href="produit.php?id=<?= $item['produit_id'] ?>" class="btn btn-view">👁 Voir le produit</a>
-                            <a href="panier.php?action=delete&id=<?= $item['produit_id'] ?>" class="btn btn-remove" onclick="return confirm('Retirer ce produit du panier ?');">❌ Retirer</a>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+            <div class="product-info">
+                <p><strong>Catégorie :</strong> <?php echo htmlspecialchars($produit["categorie"] ?? 'Non renseignée'); ?></p>
+                <p><strong>État :</strong> <?php echo htmlspecialchars($produit["etat"] ?? "Non renseigné"); ?></p>
+                <p><strong>Type de vente :</strong> <?php echo htmlspecialchars($produit["type_vente"] ?? 'Non renseigné'); ?></p>
+                <p><strong>Statut :</strong> <?php echo htmlspecialchars($produit["statut"] ?? 'Disponible'); ?></p>
             </div>
 
-            <aside class="summary">
-                <h2>Résumé de la commande</h2>
-                <div class="summary-line">
-                    <span>Sous-total</span>
-                    <span><?= number_format($sous_total, 0, ',', ' ') ?>€</span>
-                </div>
-                <div class="summary-line">
-                    <span>Livraison</span>
-                    <span>Gratuite</span>
-                </div>
-                <div class="summary-line total">
-                    <span>Total</span>
-                    <span><?= number_format($sous_total, 0, ',', ' ') ?>€</span>
-                </div>
-                <a href="checkout.php" class="checkout-btn" style="display: block; text-align: center; text-decoration: none;">✅ Passer au paiement</a>
-            </aside>
+            <div class="seller">
+                <h3>Vendeur</h3>
+                <p><?php echo htmlspecialchars($produit["nom_utilisateur"] ?? "Utilisateur inconnu"); ?> ⭐ 4.9/5</p>
+            </div>
+
+            <div class="buttons" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+
+    <?php
+    // Calcul ou récupération du prix d'affichage (standard ou négocié si accepté)
+    $prix_affichage = $produit["prix"] ?? 0;
+    if ($utilisateur_id) {
+        $check_nego = $pdo->prepare("SELECT montant_propose, statut FROM negotiations WHERE produit_id = ? AND acheteur_id = ? ORDER BY id DESC LIMIT 1");
+        $check_nego->execute([$id_produit, $utilisateur_id]);
+        $nego_existante = $check_nego->fetch(PDO::FETCH_ASSOC);
+
+        if ($nego_existante && $nego_existante['statut'] === 'accepte') {
+            $prix_affichage = $nego_existante['montant_propose'];
+        }
+    }
+    ?>
+
+    <form action="checkout.php" method="GET" style="width: 100%; margin: 0;">
+        <input type="hidden" name="unique_produit_id" value="<?= $id_produit ?>">
+        <input type="hidden" name="prix_negocie" value="<?= $prix_affichage ?>">
+        <button type="submit" class="btn btn-buy" style="width: 100%; margin: 0;">
+            🛍️ Acheter maintenant (<?= number_format($prix_affichage, 0, ',', ' ') ?>€)
+        </button>
+    </form>
+
+    <a href="panier.php?action=add&id=<?= $id_produit ?>" class="btn btn-cart" style="width: 100%;">
+        🛒 Ajouter au panier
+    </a>
+
+    <div style="background: #f1f5f9; padding: 15px; border-radius: 10px; width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; margin-top: 5px;">
+        <h4 style="margin-bottom: 10px; color: #0f172a; font-size: 15px;">🤝 Négocier le prix</h4>
+        
+        <form action="soumettre_negociation.php" method="POST" style="display: flex; gap: 10px; align-items: center; margin: 0;">
+            <input type="hidden" name="produit_id" value="<?= $id_produit ?>">
+            
+            <div style="position: relative; flex: 1;">
+                <input type="number" 
+                       name="prix_propose" 
+                       max="<?= ($produit['prix'] ?? 1) - 1 ?>" 
+                       step="0.01" 
+                       placeholder="Prix inférieur..." 
+                       required 
+                       style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; margin: 0; box-sizing: border-box;">
+            </div>
+            
+            <button type="submit" style="background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 14px;">
+                Soumettre
+            </button>
+        </form>
+        
+        <?php if (isset($_GET['nego']) && $_GET['nego'] === 'success'): ?>
+            <p style="color: #10b981; font-size: 13px; margin-top: 8px; font-weight: bold; text-align: center;">✅ Proposition envoyée au vendeur !</p>
         <?php endif; ?>
+    </div>
+
+    <a href="produit.php?id=<?= $id_produit ?>&action=add_favoris" class="btn btn-fav" style="width: 100%;">
+        ❤️ Ajouter aux favoris
+    </a>
+    
+</div>
+        </div>
     </section>
 
     <footer>
