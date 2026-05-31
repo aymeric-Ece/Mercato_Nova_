@@ -319,6 +319,7 @@ try {
             <li><a href="Catalogue.php">Catalogue</a></li>
             <li><a href="encheres.php">Enchères</a></li>
             <li><a href="mes_annonces.php">Mes annonces</a></li>
+            <li><a href="notification.php">🔔 Notifications</a></li>
             
             <?php if (isset($_SESSION['nom_utilisateur'])): ?>
                 <!-- Affiche le nom de l'utilisateur connecté et un lien de déconnexion -->
