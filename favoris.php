@@ -355,6 +355,7 @@ try {
             <li><a href="catalogue.php">Catalogue</a></li>
             <li><a href="encheres.php">Enchères</a></li>
             <li><a href="mes_annonces.php">Mes annonces</a></li>
+            <li><a href="notification.php">🔔 Notifications</a></li>
             <?php if (isset($_SESSION['nom_utilisateur'])): ?>
                 <li style="color: #38bdf8; font-weight: bold; font-size: 17px; display: flex; align-items: center; gap: 10px;">
                     👤 <?php echo htmlspecialchars($_SESSION['nom_utilisateur']); ?>
