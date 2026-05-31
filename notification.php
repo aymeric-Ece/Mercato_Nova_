@@ -204,6 +204,16 @@ try {
             <li><a href="encheres.php">Enchères</a></li>
             <li><a href="notification.php">🔔 Notifications</a></li>
             <li><a href="mes_annonces.php">Mes Annonces</a></li>
+			<?php if (isset($_SESSION['nom_utilisateur'])): ?>
+                <!-- Affiche le nom de l'utilisateur connecté et un lien de déconnexion -->
+                <li style="color: #38bdf8; font-weight: bold; font-size: 17px; display: flex; align-items: center; gap: 8px;">
+                    👤 <?= htmlspecialchars($_SESSION['nom_utilisateur']); ?>
+                    <a href="deconnexion.php" style="color: #ef4444; font-size: 13px; text-decoration: none;" onclick="return confirm('Voulez-vous vous déconnecter ?');">(Déconnexion)</a>
+                </li>
+            <?php else: ?>
+                <!-- Lien classique si visiteur anonyme -->
+                <li><a href="connexion.html">Connexion</a></li>
+            <?php endif; ?>
         </ul>
     </nav>
 
