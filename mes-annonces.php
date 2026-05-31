@@ -1,13 +1,72 @@
+<?php
+// Démarrage de la session pour l'utilisateur connecté
+session_start();
+
+// CONNEXION MYSQL
+$host = "localhost";
+$dbname = "mercato_nova";
+$user = "root";
+$password = "";
+
+try {
+    $pdo = new PDO(
+        "mysql:host=$host;dbname=$dbname;charset=utf8",
+        $user,
+        $password
+    );
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur connexion base de données.");
+}
+
+// ID de l'utilisateur connecté (Lier à votre session, de test = 1)
+$utilisateur_id = $_SESSION['utilisateur_id'] ?? null;
+
+// Si l'utilisateur n'est pas connecté, on le redirige vers la page de connexion
+if (!$utilisateur_id) {
+    header("Location: connexion.html");
+    exit();
+}
+
+$message = "";
+
+// ==========================================
+// ACTION : SUPPRIMER UNE ANNONCE
+// ==========================================
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+    $id_annonce_a_supprimer = intval($_GET['id']);
+    
+    try {
+        // Sécurité : Vérifie que le produit appartient bien à l'utilisateur connecté avant de supprimer
+        $suppression = $pdo->prepare("DELETE FROM produits WHERE id = ? AND utilisateur_id = ?");
+        $suppression->execute([$id_annonce_a_supprimer, $utilisateur_id]);
+        
+        $message = "L'annonce a été supprimée avec succès.";
+    } catch (PDOException $e) {
+        $message = "Erreur lors de la suppression de l'annonce.";
+    }
+}
+
+// ==========================================
+// RECUPERATION DES ANNONCES DE L'UTILISATEUR
+// ==========================================
+try {
+    $requete = $pdo->prepare("SELECT * FROM produits WHERE utilisateur_id = ? ORDER BY date_publication DESC");
+    $requete->execute([$utilisateur_id]);
+    $mes_annonces = $requete->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    die("Erreur lors de la récupération de vos annonces.");
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes annonces - MercaTech</title>
+    <title>Mes annonces - Mercato Nova</title>
 
     <style>
-
         *{
             margin:0;
             padding:0;
@@ -20,7 +79,7 @@
             color:#0f172a;
         }
 
-
+        /* HEADER */
         nav{
             display:flex;
             justify-content:space-between;
@@ -51,6 +110,7 @@
             color:#38bdf8;
         }
 
+        /* PAGE TITLE */
         .page-title{
             padding:60px 60px 20px;
         }
@@ -65,6 +125,7 @@
             font-size:18px;
         }
 
+        /* TOP ACTIONS */
         .top-actions{
             padding:0 60px 30px;
             display:flex;
@@ -85,6 +146,7 @@
             background:#0ea5e9;
         }
 
+        /* ANNOUNCEMENTS */
         .annonces-container{
             padding:20px 60px 80px;
             display:flex;
@@ -145,8 +207,28 @@
             font-weight:bold;
         }
 
-        <!-- boutons d'actions -->
+        /* ALERT MESSAGE */
+        .alert {
+            margin: 0 60px 20px;
+            padding: 15px;
+            background-color: #fef08a;
+            color: #854d0e;
+            border: 1px solid #fde047;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
 
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        /* BUTTONS */
         .actions{
             display:flex;
             flex-direction:column;
@@ -154,6 +236,9 @@
         }
 
         .btn{
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
             padding:14px 20px;
             border:none;
             border-radius:10px;
@@ -163,22 +248,13 @@
             min-width:200px;
         }
 
-        .btn-edit{
+        .btn-view{
             background:#0f172a;
             color:white;
         }
 
-        .btn-edit:hover{
-            background:#1e293b;
-        }
-
-        .btn-view{
-            background:#38bdf8;
-            color:white;
-        }
-
         .btn-view:hover{
-            background:#0ea5e9;
+            background:#1e293b;
         }
 
         .btn-delete{
@@ -190,6 +266,7 @@
             background:#dc2626;
         }
 
+        /* FOOTER */
         footer{
             background:#0f172a;
             color:white;
@@ -197,211 +274,116 @@
             padding:25px;
         }
 
+        /* RESPONSIVE */
         @media(max-width:950px){
-
             .annonce-card{
                 flex-direction:column;
                 text-align:center;
             }
-
             .annonce-card img{
                 width:100%;
                 height:250px;
             }
-
             .actions{
                 width:100%;
             }
-
             .btn{
                 width:100%;
             }
         }
 
         @media(max-width:768px){
-
             nav{
                 flex-direction:column;
                 gap:20px;
             }
-
             nav ul{
                 flex-wrap:wrap;
                 justify-content:center;
             }
-
             .page-title,
             .top-actions,
-            .annonces-container{
+            .annonces-container, .alert{
                 padding-left:25px;
                 padding-right:25px;
+                margin-left: 25px;
+                margin-right: 25px;
             }
-
             .page-title h1{
                 font-size:38px;
             }
         }
-
     </style>
-
 </head>
 
 <body>
 
-<nav>
-        <div class="logo">
-            MercaTech
-        </div>
-
+    <nav>
+        <div class="logo">Mercato Nova</div>
         <ul>
-            <li><a href="accueil.html">Accueil</a></li>
-            <li><a href="catalogue.html">Catalogue</a></li>
-            <li><a href="encheres.html">Enchères</a></li>
-			<li><a href="mes_annonces.html">Mes annonces</a></li>
-            <li><a href="connexion.html">Connexion</a></li>
+            <li><a href="accueil.php">Accueil</a></li>
+            <li><a href="catalogue.php">Catalogue</a></li>
+            <li><a href="encheres.php">Enchères</a></li>
+            <li><a href="mes_annonces.php">Mes annonces</a></li>
+            <?php if (isset($_SESSION['nom_utilisateur'])): ?>
+                <li style="color: #38bdf8; font-weight: bold; font-size: 17px; display: flex; align-items: center; gap: 8px;">
+                    👤 <?= htmlspecialchars($_SESSION['nom_utilisateur']); ?>
+                    <a href="deconnexion.php" style="color: #ef4444; font-size: 13px; text-decoration: none;" onclick="return confirm('Voulez-vous vous déconnecter ?');">(Déconnexion)</a>
+                </li>
+            <?php else: ?>
+                <li><a href="connexion.html">Connexion</a></li>
+            <?php endif; ?>
         </ul>
     </nav>
 
     <section class="page-title">
-
         <h1>Mes annonces 📦</h1>
-
-        <p>
-            Gérez tous les produits que vous avez mis en vente sur MercaTech.
-        </p>
-
+        <p>Gérez tous les produits que vous avez mis en vente sur Mercato Nova.</p>
     </section>
 
-    <!-- boutons d'actions -->
-
     <div class="top-actions">
-
-        <a href="vendre.html" class="sell-btn">
-            ➕ Ajouter une annonce ➕
-        </a>
-
+        <a href="vendre.php" class="sell-btn">➕ Ajouter une annonce</a>
     </div>
 
+    <?php if(!empty($message)): ?>
+        <div class="alert"><?= htmlspecialchars($message) ?></div>
+    <?php endif; ?>
 
     <section class="annonces-container">
-
-        <!-- PRODUCT 1 -->
-        <div class="annonce-card">
-
-            <img src="https://images.unsplash.com/photo-1606813907291-d86efa9b94db?q=80&w=1170&auto=format&fit=crop" alt="PS5">
-
-            <div class="annonce-info">
-
-                <h2>PlayStation 5</h2>
-
-                <p>
-                    Console nouvelle génération avec SSD ultra rapide et graphismes 4K.
-                </p>
-
-                <div class="price">
-                    499€
-                </div>
-
-                <div class="status">
-                    ✅ En ligne
-                </div>
-
+        <?php if(empty($mes_annonces)): ?>
+            <div class="empty-state">
+                <h2>Vous n'avez publié aucune annonce pour le moment.</h2>
             </div>
+        <?php else: ?>
+            <?php foreach($mes_annonces as $annonce): ?>
+                <div class="annonce-card">
+                    <img src="<?= htmlspecialchars($annonce['image'] ?? 'uploads/default.jpg') ?>" alt="<?= htmlspecialchars($annonce['nom']) ?>">
 
-            <div class="actions">
+                    <div class="annonce-info">
+                        <h2><?= htmlspecialchars($annonce['nom']) ?></h2>
+                        <p><?= nl2br(htmlspecialchars($annonce['description'])) ?></p>
+                        <div class="price"><?= number_format($annonce['prix'], 0, ',', ' ') ?>€</div>
+                        <div class="status">
+                            <?= htmlspecialchars($annonce['statut'] ?? '✅ En ligne') ?>
+                        </div>
+                    </div>
 
-                <a href="modifier.html">
-					<button class="btn btn-view">
-						⚙ Gérer l'annonce
-					</button>
-				</a>
+                    <div class="actions">
+                        <a href="modifier.php?id=<?= $annonce['id'] ?>" class="btn btn-view">
+                            ⚙ Gérer l'annonce
+                        </a>
 
-                <button class="btn btn-delete">
-                    ❌ Supprimer
-                </button>
-            </div>
-        </div>
-
-        <!-- PRODUCT 2 -->
-        <div class="annonce-card">
-
-            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1170&auto=format&fit=crop" alt="iPhone">
-
-            <div class="annonce-info">
-
-                <h2>iPhone 15 Pro</h2>
-
-                <p>
-                    Smartphone Apple premium avec écran ProMotion et appareil photo avancé.
-                </p>
-
-                <div class="price">
-                    1299€
+                        <a href="mes_annonces.php?action=delete&id=<?= $annonce['id'] ?>" class="btn btn-delete" onclick="return confirm('Êtes-vous sûr de vouloir supprimer définitivement cette annonce ?');">
+                            ❌ Supprimer
+                        </a>
+                    </div>
                 </div>
-
-                <div class="status">
-                    🔥 En négociation
-                </div>
-            </div>
-
-            <div class="actions">
-
-				 <a href="modifier.html">
-					<button class="btn btn-view">
-						⚙ Gérer l'annonce
-					</button>
-				</a>
-
-                <button class="btn btn-delete">
-                    ❌ Supprimer
-                </button>
-
-            </div>
-        </div>
-
-        <!-- PRODUCT 3 -->
-        <div class="annonce-card">
-
-            <img src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=1170&auto=format&fit=crop" alt="PC Gamer">
-
-            <div class="annonce-info">
-
-                <h2>PC Gamer RTX</h2>
-
-                <p>
-                    Configuration gaming ultra performante idéale pour le streaming et les jeux AAA.
-                </p>
-
-                <div class="price">
-                    1599€
-                </div>
-
-                <div class="status">
-                    ⏳ En attente
-                </div>
-
-            </div>
-
-            <div class="actions">
-                <a href="modifier.html">
-					<button class="btn btn-view">
-						⚙ Gérer l'annonce
-					</button>
-				</a>
-
-                <button class="btn btn-delete">
-                    ❌ Supprimer
-                </button>
-            </div>
-
-        </div>
-
+            <?php endforeach; ?>
+        <?php endif; ?>
     </section>
 
     <footer>
-        <p>
-            © 2026 MercaTech - Tous droits réservés
-        </p>
+        <p>© 2026 Mercato Nova - Tous droits réservés</p>
     </footer>
 
 </body>
