@@ -90,15 +90,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
 
     // SESSION
-
     $_SESSION["id"] = $utilisateur["id"];
-
+    $_SESSION["utilisateur_id"] = $utilisateur["id"]; // Ajouté pour correspondre à vos pages PHP
     $_SESSION["nom_utilisateur"] = $utilisateur["nom_utilisateur"];
 
-    // REDIRECTION
-
-    header("Location: accueil.html");
-
+    // REDIRECTION (Idéalement vers accueil.php si vous le passez en PHP, ou catalogue.php)
+    header("Location: accueil.php");
     exit();
 
 }
