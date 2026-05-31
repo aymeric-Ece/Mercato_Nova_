@@ -1,273 +1,281 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	
-    <title>Inscription - MercaTech</title>
-	
-    <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscription</title>
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, Helvetica, sans-serif;
-        }
+<style>
 
-        body {
-            background-color: #f8fafc;
-            color: #0f172a;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial;
+}
 
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 60px;
-            background-color: #0f172a;
-            width: 100%;
-        }
+body{
+    background:#f8fafc;
+}
 
-        .logo {
-            font-size: 30px;
-            font-weight: bold;
-            color: #38bdf8;
-        }
-        
-        nav ul {
-            display: flex;
-            gap: 30px;
-            list-style: none;
-        }
+.container{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:40px;
+}
 
-        nav ul li a {
-            color: white;
-            text-decoration: none;
-            transition: 0.3s;
-        }
+.form-box{
+    background:white;
+    width:550px;
+    padding:50px;
+    border-radius:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.08);
+}
 
-        nav ul li a:hover {
-            color: #38bdf8;
-        }
+h1{
+    margin-bottom:30px;
+    text-align:center;
+    color:#0f172a;
+}
 
-        .main-content {
-            flex: 1; /* Prend tout l'espace disponible sous la nav */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px 20px;
-        }
+input{
+    width:100%;
+    padding:15px;
+    margin-bottom:20px;
+    border-radius:10px;
+    border:1px solid #cbd5e1;
+    font-size:16px;
+}
 
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            width: 100%;
-            max-width: 450px;
-        }
+.checkbox{
+    margin-bottom:20px;
+    color:#334155;
+    line-height:1.5;
+}
 
-        h2 {
-            text-align: center;
-            color: #1e293b;
-            margin-bottom: 24px;
-            font-size: 28px;
-        }
+.checkbox input{
+    width:auto;
+    margin-right:10px;
+}
 
-        .form-group {
-            margin-bottom: 16px;
-        }
+.checkbox a{
+    color:#0284c7;
+    text-decoration:none;
+}
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #475569;
-            font-weight: 500;
-            font-size: 14px;
-        }
+.checkbox a:hover{
+    text-decoration:underline;
+}
 
-        input[type="text"],
-        input[type="email"],
-        input[type="tel"],
-        input[type="password"] { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; color: #0f172a; }
+button{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:10px;
+    background:#38bdf8;
+    color:white;
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+}
 
-        input:focus {
-            outline: none;
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
-        }
+button:hover{
+    background:#0ea5e9;
+}
+.error-input{
+    border:2px solid #dc2626;
+    background:#fef2f2;
+}
 
-        .checkbox-group {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 12px;
-            gap: 8px;
-        }
+.error-message{
+    color:#dc2626;
+    margin-top:-10px;
+    margin-bottom:15px;
+    font-size:14px;
+}
 
-        .checkbox-group label {
-            font-size: 13px;
-            font-weight: normal;
-            margin-bottom: 0;
-            cursor: pointer;
-        }
+.error-checkbox{
+    color:#dc2626;
+}
 
-        .checkbox-group input {
-            margin-top: 2px;
-            cursor: pointer;
-        }
+</style>
 
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background-color: #16a34a;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 10px;
-        }
-
-        .btn-submit:hover {
-            background-color: #15803d;
-        }
-
-        .error-message {
-            background-color: #fee2e2;
-            color: #dc2626;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            font-size: 14px;
-            text-align: center;
-            border: 1px solid #fca5a5;
-        }
-
-        .success-message {
-            background-color: #dcfce7;
-            color: #16a34a;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            font-size: 16px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #86efac;
-        }
-
-        .hidden {
-            display: none;
-        }
-    </style>
 </head>
+
 <body>
 
-    <nav>
-        <div class="logo">MercaTech</div>
-        <ul>
-            <li><a href="Acceuil_MT.html">Accueil</a></li>
-            <li><a href="catalogue.html">Catalogue</a></li>
-            <li><a href="encheres.html">Enchères</a></li>
-        </ul>
-    </nav>
+<div class="container">
 
-    <div class="main-content">
-        <div class="container">
-            <h2 id="titre-page">Inscription MercaTech</h2>
+    <div class="form-box">
 
-            <div id="message-container"></div>
+        <h1>S'inscrire</h1>
 
-            <form id="form-inscription" action="traitement_inscription.php" method="POST">
-                
-                <div class="form-group">
-                    <label for="nom_utilisateur">Nom d'utilisateur</label>
-                    <input type="text" id="nom_utilisateur" name="nom_utilisateur" required>
-                </div>
+        <form action="traitement_inscription.php" method="POST">
 
-                <div class="form-group">
-                    <label for="email">Adresse E-mail</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
+    <!-- NOM UTILISATEUR -->
 
-                <div class="form-group">
-                    <label for="telephone">Numéro de téléphone</label>
-                    <input type="tel" id="telephone" name="telephone" required>
-                </div>
+    <input 
+		type="text"
+		name="nom_utilisateur"
+		placeholder="Nom d'utilisateur"
+		value="<?php echo htmlspecialchars($_GET['nom_utilisateur'] ?? ''); ?>"
+		class="<?php if(isset($_GET['erreur_nom'])) echo 'error-input'; ?>"
+		required
+	>
 
-                <div class="form-group">
-                    <label for="mot_de_passe">Mot de passe</label>
-                    <input type="password" id="mot_de_passe" name="mot_de_passe" required>
-                </div>
+    <?php
+    if(isset($_GET['erreur_nom'])){
+        echo '<p class="error-message">
+        Ce nom d’utilisateur existe déjà.
+        </p>';
+    }
+    ?>
 
-                <div class="form-group">
-                    <label for="confirmation_mot_de_passe">Confirmer le mot de passe</label>
-                    <input type="password" id="confirmation_mot_de_passe" name="confirmation_mot_de_passe" required>
-                </div>
+    <!-- EMAIL -->
 
-                <div class="checkbox-group">
-                    <input type="checkbox" id="confidentialite" name="confidentialite" required>
-                    <label for="confidentialite">J'accepte la politique de confidentialité.</label>
-                </div>
+    <input 
+		type="email"
+		name="email"
+		placeholder="Adresse email"
+		value="<?php echo htmlspecialchars($_GET['email'] ?? ''); ?>"
+		class="<?php if(isset($_GET['erreur_email'])) echo 'error-input'; ?>"
+		required
+	>
 
-                <button type="submit" class="btn-submit">Valider l'inscription</button>
-            </form>
-        </div>
+    <?php
+    if(isset($_GET['erreur_email'])){
+        echo '<p class="error-message">
+        Cette adresse email existe déjà.
+        </p>';
+    }
+    ?>
+
+    <!-- TELEPHONE -->
+
+    <input 
+		type="tel"
+		name="telephone"
+		placeholder="Numéro de téléphone"
+		value="<?php echo htmlspecialchars($_GET['telephone'] ?? ''); ?>"
+		class="<?php if(isset($_GET['erreur_telephone'])) echo 'error-input'; ?>"
+		required
+	>
+    <?php
+    if(isset($_GET['erreur_telephone'])){
+        echo '<p class="error-message">
+        Ce numéro est déjà utilisé.
+        </p>';
+    }
+    ?>
+
+    <!-- MOT DE PASSE -->
+
+    <input 
+        type="password"
+        name="mot_de_passe"
+        placeholder="Mot de passe"
+        required
+    >
+
+    <input 
+        type="password"
+        name="confirmation_mot_de_passe"
+        placeholder="Confirmer le mot de passe"
+        class="<?php if(isset($_GET['erreur_mdp'])) echo 'error-input'; ?>"
+        required
+    >
+
+    <?php
+    if(isset($_GET['erreur_mdp'])){
+        echo '<p class="error-message">
+        Les mots de passe ne correspondent pas.
+        </p>';
+    }
+    ?>
+
+    <!-- CASES -->
+
+    <div class="checkbox <?php if(isset($_GET['erreur_conditions'])) echo 'error-checkbox'; ?>">
+
+    <label>
+
+        <input 
+			type="checkbox"
+			name="confidentialite"
+
+			<?php
+			if(
+				isset($_GET['nom_utilisateur']) ||
+				isset($_GET['email']) ||
+				isset($_GET['telephone'])
+			){
+				echo 'checked';
+			}
+			?>
+		>
+
+        J'atteste avoir lu la
+        <a href="politique_de_confidentialite.html">
+            politique de confidentialité
+        </a>
+        de la plateforme.
+
+    </label>
+
+</div>
+
+<div class="checkbox <?php if(isset($_GET['erreur_conditions'])) echo 'error-checkbox'; ?>">
+
+    <label>
+
+        <input 
+			type="checkbox"
+			name="majeur"
+
+			<?php
+			if(
+				isset($_GET['nom_utilisateur']) ||
+				isset($_GET['email']) ||
+				isset($_GET['telephone'])
+			){
+				echo 'checked';
+			}
+			?>
+		>
+
+        J'atteste avoir plus de 18 ans.
+
+    </label>
+
+</div>
+
+<?php
+
+if(isset($_GET['erreur_conditions'])){
+
+    echo '
+    <p class="error-message">
+        Vous devez accepter les conditions.
+    </p>
+    ';
+
+}
+
+?>
+
+    <button type="submit">
+        Créer mon compte
+    </button>
+
+</form>
+
     </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const params = new URLSearchParams(window.location.search);
-            const messageContainer = document.getElementById("message-container");
-            const formInscription = document.getElementById("form-inscription");
-            const titrePage = document.getElementById("titre-page");
+</div>
 
-            if (params.has('nom_utilisateur')) document.getElementById('nom_utilisateur').value = params.get('nom_utilisateur');
-            if (params.has('email')) document.getElementById('email').value = params.get('email');
-            if (params.has('telephone')) document.getElementById('telephone').value = params.get('telephone');
-
-            if (params.has('success')) {
-                titrePage.classList.add('hidden');
-                formInscription.classList.add('hidden');
-				
-                messageContainer.innerHTML = `
-                    <div class="success-message">
-                        ✅ Inscription réussie !<br><br>
-                        <span style="font-size: 14px; font-weight: normal; color: #475569;">
-                            Redirection vers l'accueil dans 2 secondes...
-                        </span>
-                    </div>
-                `;
-                setTimeout(() => {
-                    window.location.href = 'Acceuil_MT.html'; 
-                }, 2000);
-                return;
-            }
-
-            let errorMessage = "";
-            if (params.has('erreur')) {
-                errorMessage = "Erreur de connexion à la base de données.";
-            } else if (params.has('erreur_conditions')) {
-                errorMessage = "Vous devez accepter les conditions et confirmer être majeur.";
-            } else if (params.has('erreur_mdp')) {
-                errorMessage = "Les mots de passe ne correspondent pas.";
-            } else if (params.has('erreur_nom')) {
-                errorMessage = "Ce nom d'utilisateur est déjà pris.";
-            } else if (params.has('erreur_email')) {
-                errorMessage = "Cet email est déjà utilisé.";
-            } else if (params.has('erreur_telephone')) {
-                errorMessage = "Ce numéro de téléphone est déjà enregistré.";
-            }
-
-            if (errorMessage !== "") {
-                messageContainer.innerHTML = `<div class="error-message">${errorMessage}</div>`;
-            }
-        });
-    </script>
 </body>
+
 </html>
