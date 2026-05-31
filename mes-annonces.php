@@ -48,10 +48,19 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])
 }
 
 // ==========================================
-// RECUPERATION DES ANNONCES DE L'UTILISATEUR
+// RECUPERATION DES ANNONCES DE L'UTILISATEUR AVEC LES NÉGOCIATIONS
 // ==========================================
 try {
-    $requete = $pdo->prepare("SELECT * FROM produits WHERE utilisateur_id = ? ORDER BY date_publication DESC");
+    $requete = $pdo->prepare("
+        SELECT p.*, 
+               n.montant_propose AS prix_negocie, 
+               n.statut AS statut_nego
+        FROM produits p
+        LEFT JOIN negotiations n ON p.id = n.produit_id 
+             AND n.id = (SELECT MAX(id) FROM negotiations WHERE produit_id = p.id)
+        WHERE p.utilisateur_id = ? 
+        ORDER BY p.date_publication DESC
+    ");
     $requete->execute([$utilisateur_id]);
     $mes_annonces = $requete->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -362,7 +371,19 @@ try {
                     <div class="annonce-info">
                         <h2><?= htmlspecialchars($annonce['nom']) ?></h2>
                         <p><?= nl2br(htmlspecialchars($annonce['description'])) ?></p>
-                        <div class="price"><?= number_format($annonce['prix'], 0, ',', ' ') ?>€</div>
+                        <div class="price">
+    <?= number_format($annonce['prix'], 0, ',', ' ') ?>€
+    
+    <?php if (!empty($annonce['prix_negocie'])): ?>
+        <div style="font-size: 16px; color: #f59e0b; margin-top: 5px;">
+            <?php if ($annonce['statut_nego'] === 'en_attente'): ?>
+                ⏳ Offre proposée : <strong><?= number_format($annonce['prix_negocie'], 0, ',', ' ') ?>€</strong>
+            <?php elseif ($annonce['statut_nego'] === 'accepte'): ?>
+                🤝 Prix négocié accepté : <strong style="color: #10b981;"><?= number_format($annonce['prix_negocie'], 0, ',', ' ') ?>€</strong>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>
                         <div class="status">
                             <?= htmlspecialchars($annonce['statut'] ?? '✅ En ligne') ?>
                         </div>
