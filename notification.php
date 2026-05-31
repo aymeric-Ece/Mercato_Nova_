@@ -274,8 +274,8 @@ try {
                         
                         <?php if ($nego['statut'] === 'en_attente'): ?>
                             <div style="display: flex; gap: 10px;">
-                                <a href="action_negociation.php?action=accepter&id=<?= $nego['nego_id'] ?>" class="badge-offer" style="background: #10b981; color: white; text-decoration: none;">Accepter</a>
-                                <a href="action_negociation.php?action=refuser&id=<?= $nego['nego_id'] ?>" class="badge-fav" style="background: #ef4444; color: white; text-decoration: none;">Refuser</a>
+                                <a href="traitement_negociation.php?action=accepter&id=<?= $nego['nego_id'] ?>" class="badge-offer" style="background: #10b981; color: white; text-decoration: none;">Accepter</a>
+<a href="traitement_negociation.php?action=refuser&id=<?= $nego['nego_id'] ?>" class="badge-fav" style="background: #ef4444; color: white; text-decoration: none;">Refuser</a>
                             </div>
                         <?php else: ?>
                             <span class="badge-offer" style="background: #e2e8f0; color: #475569;">Traité</span>
