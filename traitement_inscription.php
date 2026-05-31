@@ -6,7 +6,7 @@ $host = "localhost";
 $dbname = "mercato_nova";
 $user = "root";
 $password = "";
-
+session_start();
 try{
 
     $pdo = new PDO(
@@ -126,8 +126,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         PASSWORD_DEFAULT
     );
 
-    // INSERTION MYSQL
-
+   // INSERTION MYSQL
     $requete = $pdo->prepare("
         INSERT INTO utilisateurs(
             nom_utilisateur,
@@ -145,6 +144,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $mot_de_passe_hash
     ]);
 
+    // --- AJOUT DE LA CONNEXION AUTOMATIQUE APRÈS INSCRIPTION ---
+    $nouvel_id = $pdo->lastInsertId(); // Récupère l'ID créé par MySQL
+    
+    $_SESSION["id"] = $nouvel_id;
+    $_SESSION["utilisateur_id"] = $nouvel_id;
+    $_SESSION["nom_utilisateur"] = $nom_utilisateur;
+
 }
 
 ?>
@@ -156,7 +162,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
 <meta charset="UTF-8">
 
-<meta http-equiv="refresh" content="2;url=accueil.html">
+<meta http-equiv="refresh" content="2;url=accueil.php">
 
 <title>Inscription réussie</title>
 
