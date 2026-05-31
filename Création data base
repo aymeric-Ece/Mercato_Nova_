@@ -1,0 +1,109 @@
+CREATE DATABASE IF NOT EXISTS mercato_nova;
+USE mercato_nova;
+
+-- =========================================
+-- 1. TABLE UTILISATEURS
+-- =========================================
+CREATE TABLE utilisateurs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom_utilisateur VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    telephone VARCHAR(20) NOT NULL UNIQUE,
+    mot_de_passe VARCHAR(255) NOT NULL,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================================
+-- 2. TABLE PRODUITS
+-- =========================================
+CREATE TABLE produits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilisateur_id INT NOT NULL,
+    nom VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    categorie VARCHAR(100) NOT NULL,
+    prix DECIMAL(10,2) NOT NULL,
+    image VARCHAR(255) DEFAULT 'uploads/default.jpg',
+    type_vente VARCHAR(50) NOT NULL, -- Stocke directement 'Vente Directe', 'Enchères', etc.
+    statut VARCHAR(50) DEFAULT 'Disponible', -- Stocke 'Disponible', 'Vendu'
+    etat VARCHAR(50) DEFAULT 'Non renseigné', -- Ajouté pour correspondre à produit.php
+    date_publication TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- 3. TABLE FAVORIS
+-- =========================================
+CREATE TABLE favoris (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilisateur_id INT NOT NULL,
+    produit_id INT NOT NULL,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (produit_id) REFERENCES produits(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- 4. TABLE PANIER
+-- =========================================
+CREATE TABLE panier (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilisateur_id INT NOT NULL,
+    produit_id INT NOT NULL,
+    quantite INT DEFAULT 1,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (produit_id) REFERENCES produits(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- 5. TABLE ENCHERES (Annonces d'Enchères)
+-- =========================================
+CREATE TABLE encheres (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilisateur_id INT NOT NULL, -- Créateur de l'enchère
+    nom VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    categorie VARCHAR(100) NOT NULL,
+    prix_depart DECIMAL(10,2) NOT NULL,
+    image VARCHAR(255) DEFAULT 'uploads/default.jpg',
+    date_publication TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_fin DATETIME NOT NULL, -- Date et heure de clôture de l'enchère
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- 6. TABLE OFFRES_ENCHERES (Mises faites par les utilisateurs)
+-- =========================================
+CREATE TABLE offres_encheres (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    enchere_id INT NOT NULL,
+    utilisateur_id INT NOT NULL, -- Celui qui propose un montant
+    montant DECIMAL(10,2) NOT NULL,
+    date_offre TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (enchere_id) REFERENCES encheres(id) ON DELETE CASCADE,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- 7. TABLE COMMANDES
+-- =========================================
+CREATE TABLE commandes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilisateur_id INT NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    statut ENUM('en_attente', 'payee', 'expediee') DEFAULT 'en_attente',
+    date_commande TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- 8. TABLE DETAILS_COMMANDES
+-- =========================================
+CREATE TABLE details_commandes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    commande_id INT NOT NULL,
+    produit_id INT NOT NULL,
+    quantite INT DEFAULT 1,
+    prix DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (commande_id) REFERENCES commandes(id) ON DELETE CASCADE,
+    FOREIGN KEY (produit_id) REFERENCES produits(id) ON DELETE CASCADE
+);
