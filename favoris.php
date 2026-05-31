@@ -1,10 +1,83 @@
+<?php
+// Démarrage de la session pour identifier l'utilisateur connecté
+session_start();
+
+// CONNEXION MYSQL
+$host = "localhost";
+$dbname = "mercato_nova";
+$user = "root";
+$password = "";
+
+try {
+    $pdo = new PDO(
+        "mysql:host=$host;dbname=$dbname;charset=utf8",
+        $user,
+        $password
+    );
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur connexion base de données.");
+}
+
+// Récupération de l'ID utilisateur connecté
+$utilisateur_id = $_SESSION['utilisateur_id'] ?? null;
+
+// Bloquer l'accès si l'utilisateur n'est pas connecté
+if (!$utilisateur_id) {
+    header("Location: connexion.html");
+    exit();
+}
+
+$message = "";
+
+// ==========================================
+// ACTION : RETIRER DES FAVORIS
+// ==========================================
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['favoris_id'])) {
+    $favoris_id_a_supprimer = intval($_GET['favoris_id']);
+    
+    try {
+        // Sécurité : On vérifie aussi l'utilisateur_id pour éviter qu'un utilisateur supprime le favori d'un autre
+        $suppression = $pdo->prepare("DELETE FROM favoris WHERE id = ? AND utilisateur_id = ?");
+        $suppression->execute([$favoris_id_a_supprimer, $utilisateur_id]);
+        
+        $message = "Produit retiré de vos favoris.";
+    } catch (PDOException $e) {
+        $message = "Erreur lors de la suppression du favori.";
+    }
+}
+
+// ==========================================
+// RECUPERATION DES FAVORIS DE L'UTILISATEUR
+// ==========================================
+try {
+    // La requête récupère l'ID unique du favori ET les détails du produit associé
+    $requete = $pdo->prepare("
+        SELECT 
+            favoris.id AS favoris_id,
+            produits.id AS produit_id,
+            produits.nom,
+            produits.description,
+            produits.prix,
+            produits.image
+        FROM favoris
+        INNER JOIN produits ON favoris.produit_id = produits.id
+        WHERE favoris.utilisateur_id = ?
+        ORDER BY favoris.id DESC
+    ");
+    $requete->execute([$utilisateur_id]);
+    $liste_favoris = $requete->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    die("Erreur lors de la récupération des favoris : " . $e->getMessage());
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Favoris - MercaTech </title>
+    <title>Favoris - Mercato Nova</title>
 
     <style>
         *{
@@ -19,6 +92,7 @@
             color: #0f172a;
         }
 
+        /* HEADER */
         nav{
             display: flex;
             justify-content: space-between;
@@ -52,6 +126,7 @@
             color: #38bdf8;
         }
 
+        /* PANIER TOP RIGHT */
         .top-actions{
             display: flex;
             justify-content: flex-end;
@@ -72,6 +147,7 @@
             background-color: #1e293b;
         }
 
+        /* PAGE TITLE */
         .page-title{
             padding: 30px 60px 20px;
         }
@@ -87,6 +163,38 @@
             font-size: 18px;
         }
 
+        /* ALERT MESSAGE */
+        .alert {
+            margin: 20px 60px 0;
+            padding: 15px;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        /* NO FAVORITES EMPTY STATE */
+        .empty-favorites {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            margin: 0 60px;
+        }
+        .empty-favorites a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 25px;
+            background-color: #38bdf8;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        /* FAVORITES */
         .favorites-container{
             padding: 20px 60px 80px;
             display: flex;
@@ -138,8 +246,7 @@
             color: #0284c7;
         }
 
-        <!-- boutons d'actions -->
-
+        /* BUTTONS */
         .buttons{
             display: flex;
             flex-direction: column;
@@ -147,6 +254,9 @@
         }
 
         .btn{
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
             padding: 12px 20px;
             border: none;
             border-radius: 10px;
@@ -183,16 +293,18 @@
             background-color: #dc2626;
         }
 
+        /* FOOTER */
         footer{
             background-color: #0f172a;
             text-align: center;
             padding: 25px;
             color: white;
             border-top: 1px solid #1e293b;
+            margin-top: auto;
         }
 
+        /* RESPONSIVE */
         @media(max-width: 900px){
-
             .favorite-card{
                 flex-direction: column;
                 text-align: center;
@@ -211,13 +323,16 @@
                 height: 250px;
             }
 
-            .top-actions{
-                justify-content: center;
+            .top-actions, .alert, .empty-favorites{
+                margin-left: 20px;
+                margin-right: 20px;
+            }
+            .favorites-container {
+                padding: 20px;
             }
         }
 
         @media(max-width: 768px){
-
             nav{
                 flex-direction: column;
                 gap: 20px;
@@ -228,165 +343,82 @@
                 justify-content: center;
             }
         }
-
     </style>
-
 </head>
 
 <body>
+
     <nav>
-        <div class="logo">
-            MercaTech
-        </div>
-
+        <div class="logo">Mercato Nova</div>
         <ul>
-            <li><a href="accueil.html">Accueil</a></li>
-            <li><a href="catalogue.html">Catalogue</a></li>
-            <li><a href="encheres.html">Enchères</a></li>
-			<li><a href="mes_annonces.html">Mes annonces</a></li>
-            <li><a href="connexion.html">Connexion</a></li>
+            <li><a href="accueil.php">Accueil</a></li>
+            <li><a href="catalogue.php">Catalogue</a></li>
+            <li><a href="encheres.php">Enchères</a></li>
+            <li><a href="mes_annonces.php">Mes annonces</a></li>
+            <?php if (isset($_SESSION['nom_utilisateur'])): ?>
+                <li style="color: #38bdf8; font-weight: bold; font-size: 17px; display: flex; align-items: center; gap: 10px;">
+                    👤 <?php echo htmlspecialchars($_SESSION['nom_utilisateur']); ?>
+                    <a href="deconnexion.php" style="color: #ef4444; font-size: 14px; text-decoration: none;">(Déconnexion)</a>
+                </li>
+            <?php else: ?>
+                <li><a href="connexion.html">Connexion</a></li>
+            <?php endif; ?>
         </ul>
-
     </nav>
-<div class="top-actions">
 
-        <a href="#" class="cart-button">
-            🛒 Voir le panier
-        </a>
-
+    <div class="top-actions">
+        <a href="panier.php" class="cart-button">🛒 Voir le panier</a>
     </div>
 
-
     <section class="page-title">
-
         <h1>Mes Favoris ❤️</h1>
-
-        <p>
-            Retrouvez ici tous les produits que vous avez ajoutés à vos favoris.
-        </p>
-
+        <p>Retrouvez ici tous les produits que vous avez ajoutés à vos favoris.</p>
     </section>
 
-
-    <section class="favorites-container">
-
-        <!-- PRODUCT 1 -->
-        <div class="favorite-card">
-
-            <img src="https://images.unsplash.com/photo-1606813907291-d86efa9b94db?q=80&w=1170&auto=format&fit=crop" alt="PS5">
-
-            <div class="favorite-info">
-
-                <h2>PlayStation 5</h2>
-
-                <p>
-                    Console nouvelle génération avec graphismes ultra réalistes et SSD ultra rapide.
-                </p>
-
-                <div class="price">
-                    499€
-                </div>
-
-            </div>
-
-            <div class="buttons">
-
-                <button class="btn btn-cart">
-                    🛒 Ajouter au panier
-                </button>
-
-                <button class="btn btn-view">
-                    👁 Voir le produit
-                </button>
-
-                <button class="btn btn-remove">
-                    ❌ Retirer des favoris
-                </button>
-
-            </div>
-
+    <?php if (!empty($message)): ?>
+        <div class="alert">
+            <?= htmlspecialchars($message) ?>
         </div>
+    <?php endif; ?>
 
-        <!-- PRODUCT 2 -->
-        <div class="favorite-card">
-
-            <img src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=1170&auto=format&fit=crop" alt="PC Gamer">
-
-            <div class="favorite-info">
-
-                <h2>PC Gamer RTX</h2>
-
-                <p>
-                    PC gaming haute performance parfait pour les jeux AAA et le streaming.
-                </p>
-
-                <div class="price">
-                    1599€
-                </div>
-
-            </div>
-
-            <div class="buttons">
-
-                <button class="btn btn-cart">
-                    🛒 Ajouter au panier
-                </button>
-
-                <button class="btn btn-view">
-                    👁 Voir le produit
-                </button>
-
-                <button class="btn btn-remove">
-                    ❌ Retirer des favoris
-                </button>
-
-            </div>
-
+    <?php if (empty($liste_favoris)): ?>
+        <div class="empty-favorites">
+            <h2>Vous n'avez pas encore de favoris.</h2>
+            <p>Parcourez notre catalogue pour ajouter des produits coup de cœur !</p>
+            <a href="catalogue.php">Découvrir le catalogue</a>
         </div>
+    <?php else: ?>
+        <section class="favorites-container">
+            <?php foreach ($liste_favoris as $favori): ?>
+                <div class="favorite-card">
+                    <img src="<?= htmlspecialchars($favori['image'] ?? 'uploads/default.jpg') ?>" alt="<?= htmlspecialchars($favori['nom']) ?>">
 
-        <!-- PRODUCT 3 -->
-        <div class="favorite-card">
+                    <div class="favorite-info">
+                        <h2><?= htmlspecialchars($favori['nom']) ?></h2>
+                        <p><?= nl2br(htmlspecialchars($favori['description'])) ?></p>
+                        <div class="price"><?= number_format($favori['prix'], 0, ',', ' ') ?>€</div>
+                    </div>
 
-            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1170&auto=format&fit=crop" alt="iPhone">
+                    <div class="buttons">
+                        <a href="panier.php?action=add&id=<?= $favori['produit_id'] ?>" class="btn btn-cart">
+                            🛒 Ajouter au panier
+                        </a>
 
-            <div class="favorite-info">
+                        <a href="produit.php?id=<?= $favori['produit_id'] ?>" class="btn btn-view">
+                            👁 Voir le produit
+                        </a>
 
-                <h2>iPhone 15 Pro</h2>
-
-                <p>
-                    Smartphone premium Apple avec écran ProMotion et appareil photo avancé.
-                </p>
-
-                <div class="price">
-                    1299€
+                        <a href="favoris.php?action=delete&favoris_id=<?= $favori['favoris_id'] ?>" class="btn btn-remove" onclick="return confirm('Voulez-vous vraiment retirer ce produit de vos favoris ?');">
+                            ❌ Retirer des favoris
+                        </a>
+                    </div>
                 </div>
-
-            </div>
-
-            <div class="buttons">
-
-                <button class="btn btn-cart">
-                    🛒 Ajouter au panier
-                </button>
-
-                <button class="btn btn-view">
-                    👁 Voir le produit
-                </button>
-
-                <button class="btn btn-remove">
-                    ❌ Retirer des favoris
-                </button>
-
-            </div>
-
-        </div>
-
-    </section>
+            <?php endforeach; ?>
+        </section>
+    <?php endif; ?>
 
     <footer>
-        <p>
-            © 2026 MercaTech - Tous droits réservés
-        </p>
+        <p>© 2026 Mercato Nova - Tous droits réservés</p>
     </footer>
 
 </body>
